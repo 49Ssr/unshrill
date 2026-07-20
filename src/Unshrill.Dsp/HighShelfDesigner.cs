@@ -8,8 +8,7 @@ public static class HighShelfDesigner
 		double gainDb,
 		double slope = 0.7)
 	{
-		if (sampleRate <= 0)
-			throw new ArgumentOutOfRangeException(nameof(sampleRate));
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sampleRate);
 		if (frequencyHz <= 0 || frequencyHz >= sampleRate / 2)
 			throw new ArgumentOutOfRangeException(nameof(frequencyHz));
 		if (slope <= 0 || slope > 1)
@@ -32,4 +31,3 @@ public static class HighShelfDesigner
 		return new BiquadCoefficients(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
 	}
 }
-
