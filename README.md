@@ -47,12 +47,12 @@ The executable project is `src/Unshrill.App`. Continuous integration performs th
 
 ## Repository map
 
-- [`docs/`](docs/README.md) â€” architecture, research, decisions, and roadmap.
-- [`src/Unshrill.Core`](src/Unshrill.Core) â€” platform-independent rule policy.
-- [`src/Unshrill.WindowsAudio`](src/Unshrill.WindowsAudio) â€” Windows audio boundary.
-- [`src/Unshrill.Dsp`](src/Unshrill.Dsp) â€” pure DSP code.
-- [`src/Unshrill.App`](src/Unshrill.App) â€” Windows desktop shell.
-- [`tests/Unshrill.Tests`](tests/Unshrill.Tests) â€” dependency-free smoke tests.
+- [`docs/`](docs/README.md) - architecture, research, decisions, and roadmap.
+- [`src/Unshrill.Core`](src/Unshrill.Core) - platform-independent rule policy.
+- [`src/Unshrill.WindowsAudio`](src/Unshrill.WindowsAudio) - Windows audio boundary.
+- [`src/Unshrill.Dsp`](src/Unshrill.Dsp) - pure DSP code.
+- [`src/Unshrill.App`](src/Unshrill.App) - Windows desktop shell.
+- [`tests/Unshrill.Tests`](tests/Unshrill.Tests) - dependency-free smoke tests.
 
 ## Principles
 
@@ -61,7 +61,7 @@ The executable project is `src/Unshrill.App`. Continuous integration performs th
 3. Preserve an untouched path and an immediate bypass.
 4. Treat device changes and session recreation as normal operation.
 5. Add a dependency only when it has a defined boundary and lifecycle.
-6. Do not call capture, filtering, or routing â€œworkingâ€ until it is tested on Windows.
+6. Do not call capture, filtering, or routing "working" until it is tested on Windows.
 
 ## Status
 
@@ -70,5 +70,3 @@ See the [roadmap](docs/roadmap.md). Architectural decisions are recorded under [
 ## License
 
 [MIT](LICENSE). External projects discussed in the knowledge base retain their own licenses; none are vendored here.
-
-

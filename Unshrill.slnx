@@ -1,0 +1,12 @@
+<Solution>
+	<Folder Name="/src/">
+		<Project Path="src/Unshrill.App/Unshrill.App.csproj" />
+		<Project Path="src/Unshrill.Core/Unshrill.Core.csproj" />
+		<Project Path="src/Unshrill.Dsp/Unshrill.Dsp.csproj" />
+		<Project Path="src/Unshrill.WindowsAudio/Unshrill.WindowsAudio.csproj" />
+	</Folder>
+	<Folder Name="/tests/">
+		<Project Path="tests/Unshrill.Tests/Unshrill.Tests.csproj" />
+	</Folder>
+</Solution>
+

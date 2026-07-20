@@ -1,0 +1,29 @@
+# Build output
+bin/
+obj/
+artifacts/
+TestResults/
+
+# Visual Studio and Rider
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+
+# Local captures and diagnostics
+captures/
+logs/
+*.etl
+*.wav
+*.dmp
+
+# Packaging and signing material
+publish/
+*.pfx
+*.snk
+
+# Operating-system clutter
+.DS_Store
+Thumbs.db
+
