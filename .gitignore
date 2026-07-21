@@ -10,6 +10,8 @@ TestResults/
 *.suo
 *.user
 *.userosscache
+Backup/
+UpgradeLog.htm
 
 # Local captures and diagnostics
 captures/

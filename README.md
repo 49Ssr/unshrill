@@ -5,7 +5,20 @@ Make Windows audio easier to live with.
 Unshrill is a Windows audio comfort project. Its first job is to make per-application volume, mute, device-routing, and comfort-profile rules reliable. Its longer-term job is to soften needlessly harsh sound without damaging everything else a program plays.
 
 > [!IMPORTANT]
-> This repository is at the foundation stage. The window, rule engine, DSP primitives, documentation, and build pipeline exist; live Windows audio control is the next implementation milestone.
+> Unshrill is an early test build. Live session discovery, volume, and mute controls work on the current default Windows output. Persistent rules and comfort DSP are not connected yet.
+
+## Current test build
+
+The GUI currently:
+
+- discovers shared-mode audio sessions on the default multimedia output;
+- refreshes the session list every 750 milliseconds;
+- follows applications as their sessions appear or disappear;
+- reads and changes each session's Windows volume;
+- reads and changes each session's mute state;
+- leaves ordinary Windows audio untouched when Unshrill is closed.
+
+Applications using exclusive-mode or non-default outputs will not appear in this build. Multiple sessions from one application are shown separately because Windows exposes them separately.
 
 ## What it is building toward
 
@@ -28,7 +41,7 @@ Unshrill.App
 			+-- custom APO or virtual endpoint only if later justified
 ```
 
-The controller comes first. A custom driver does not. Process-loopback capture is reserved for measurement and classification because it does not replace an application's original output path.
+The controller comes first. A custom driver does not. Process-loopback capture is reserved for measurement and classification because it does not replace an application's original output path. The Windows interop boundary uses the pinned MIT-licensed `NAudio.Wasapi` package; policy and UI code do not depend on it.
 
 ## Build
 
@@ -41,6 +54,7 @@ Requirements:
 dotnet restore Unshrill.slnx
 dotnet build Unshrill.slnx
 dotnet run --project tests/Unshrill.Tests
+dotnet run --project src/Unshrill.App
 ```
 
 The executable project is `src/Unshrill.App`. Continuous integration performs the same build and smoke-test sequence on Windows.
@@ -65,8 +79,8 @@ The executable project is `src/Unshrill.App`. Continuous integration performs th
 
 ## Status
 
-See the [roadmap](docs/roadmap.md). Architectural decisions are recorded under [`docs/decisions`](docs/decisions), including why there are currently no Git submodules.
+See the [roadmap](docs/roadmap.md). The next milestone is persistent per-application policy that survives session and device recreation. Architectural decisions are recorded under [`docs/decisions`](docs/decisions).
 
 ## License
 
-[MIT](LICENSE). External projects discussed in the knowledge base retain their own licenses; none are vendored here.
+[MIT](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md). External sources are not vendored or included as Git submodules.

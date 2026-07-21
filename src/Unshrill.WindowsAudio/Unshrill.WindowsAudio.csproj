@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
+		<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 		<TargetFramework>net10.0-windows</TargetFramework>
 	</PropertyGroup>
 	<ItemGroup>
+		<PackageReference Include="NAudio.Wasapi" Version="[2.3.0]" />
 		<ProjectReference Include="../Unshrill.Core/Unshrill.Core.csproj" />
 	</ItemGroup>
 </Project>
