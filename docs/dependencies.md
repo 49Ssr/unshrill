@@ -9,7 +9,7 @@ That is deliberate. A submodule is appropriate when Unshrill builds, tests, or s
 | Project | Possible role | Current treatment |
 | --- | --- | --- |
 | NAudio.Wasapi 2.3.0 | Managed Windows Core Audio interop | Pinned NuGet dependency in `Unshrill.WindowsAudio`; MIT license |
-| Equalizer APO | First practical endpoint-DSP backend | External installation; document and integrate through an adapter |
+| Equalizer APO | First practical endpoint-DSP backend | Optional external installation; detected and configured through a reversible text adapter |
 | EarTrumpet | Reference for Windows session and route behavior | Research reference only |
 | Microsoft Windows classic samples | Reference for process-loopback capture | Research reference only |
 | Microsoft SysVAD | Reference if a virtual endpoint becomes justified | Research reference only |

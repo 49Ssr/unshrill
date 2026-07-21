@@ -5,25 +5,32 @@ Make Windows audio easier to live with.
 Unshrill is a Windows audio comfort project. Its first job is to make per-application volume, mute, device-routing, and comfort-profile rules reliable. Its longer-term job is to soften needlessly harsh sound without damaging everything else a program plays.
 
 > [!IMPORTANT]
-> Unshrill is an early test build. Live session discovery, volume, and mute controls work on the current default Windows output. Persistent rules and comfort DSP are not connected yet.
+> Unshrill is an early test build. Persistent application volume rules work on the current default Windows output. Mercy Mode is an optional endpoint-wide prototype that requires a separate Equalizer APO installation.
 
 ## Current test build
 
 The GUI currently:
 
 - discovers shared-mode audio sessions on the default multimedia output;
-- refreshes the session list every 750 milliseconds;
+- reacts to default-device and new-session notifications, with a five-second recovery refresh;
 - follows applications as their sessions appear or disappear;
 - reads and changes each session's Windows volume;
 - reads and changes each session's mute state;
+- remembers an application's volume and mute state across restarts;
+- preserves malformed settings and starts safely with defaults;
+- detects Equalizer APO and can generate a reversible, endpoint-scoped high shelf;
 - leaves ordinary Windows audio untouched when Unshrill is closed.
 
 Applications using exclusive-mode or non-default outputs will not appear in this build. Multiple sessions from one application are shown separately because Windows exposes them separately.
 
+Saved rules live in `%LocalAppData%\Unshrill\settings.json`. The current Remember button creates an application-wide rule, so it survives a default-device change. Device-specific rule fields exist in the schema but are not exposed in the GUI yet.
+
+Mercy Mode starts at a 5 kHz, -6 dB high shelf. It does not intercept or rewrite an application's stream: it manages a small `unshrill.txt` include for an existing [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) installation. The app scopes that include to the currently displayed endpoint, backs up `config.txt` before first integration, and bypasses by writing a valid `OFF` filter. Equalizer APO must first be installed and assigned to the output with its Configurator.
+
 ## What it is building toward
 
-- Persistent per-application and per-output-device volume rules.
-- Rules reapplied when applications, sessions, or devices reappear.
+- Richer per-output and packaged-application identity controls.
+- Import, export, tray controls, and a global policy bypass.
 - Optional comfort profiles such as a gentle high-frequency shelf above roughly 5 kHz.
 - A clear boundary between Windows session control, DSP algorithms, and whichever audio-processing backend is selected.
 - Research notes that distinguish verified Windows behavior from hypotheses.
@@ -79,7 +86,7 @@ The executable project is `src/Unshrill.App`. Continuous integration performs th
 
 ## Status
 
-See the [roadmap](docs/roadmap.md). The next milestone is persistent per-application policy that survives session and device recreation. Architectural decisions are recorded under [`docs/decisions`](docs/decisions).
+See the [roadmap](docs/roadmap.md). The current milestone needs an audible Equalizer APO test and persistence testing across real application/device recreation. Architectural decisions are recorded under [`docs/decisions`](docs/decisions).
 
 ## License
 

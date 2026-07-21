@@ -24,7 +24,7 @@ DSP deployment belongs behind an adapter. The first candidate is an external Equ
 
 ## Concurrency rules
 
-- Core Audio session notifications run from a dedicated multithreaded COM apartment.
+- Core Audio session notifications are initialized and retained on a multithreaded COM worker path.
 - The UI receives immutable snapshots through an explicit dispatcher boundary.
 - Real-time audio processing performs no logging, allocation, locking, file access, or UI work.
 - Configuration generation and backend restart operations run outside audio callbacks.

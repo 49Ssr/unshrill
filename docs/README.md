@@ -18,6 +18,7 @@ This directory is the durable memory of Unshrill. Research notes link to primary
 - [ADR 0002: External DSP adapter before a custom APO](decisions/0002-external-dsp-adapter.md)
 - [ADR 0003: No custom driver for version 1](decisions/0003-no-custom-driver-for-v1.md)
 - [ADR 0004: Use NAudio.Wasapi at the interop boundary](decisions/0004-naudio-wasapi-interop.md)
+- [ADR 0005: Persistent policy and managed Equalizer APO configuration](decisions/0005-persistence-and-managed-eapo-config.md)
 
 Research notes use three confidence labels:
 

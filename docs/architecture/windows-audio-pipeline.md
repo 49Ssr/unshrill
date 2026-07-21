@@ -13,9 +13,9 @@ These requirements belong inside `Unshrill.WindowsAudio`, not in view models.
 
 ## Test-build lifecycle
 
-The first working build deliberately polls a newly acquired default multimedia endpoint every 750 milliseconds. Each pass creates, uses, and disposes its Windows wrappers on a background thread. Session volume and mute writes are serialized with enumeration so wrapper lifetimes do not overlap unpredictably.
+The monitor keeps endpoint and new-session notifications alive on a multithreaded COM worker. Notification callbacks only coalesce a refresh signal; they do not call back into Core Audio while Windows holds its internal notification lock. Snapshot reads and volume writes remain serialized, and a five-second recovery refresh covers session expiration and missed vendor-specific events.
 
-This is provisional. Microsoft warns that an enumerator alone can miss sessions reported through `IAudioSessionNotification`. A production session registry must keep a long-lived manager on an MTA thread, call `GetCount` during initialization, subscribe to session creation, and refresh on endpoint changes. Polling gives us a stable user-facing test surface while that lifecycle is implemented; it is not being presented as the final session model.
+Remembered application rules are matched by executable name rather than temporary session instance identifiers. They are reapplied when a session or the default device is recreated. JSON persistence is atomic and remains outside the Windows interop layer.
 
 ## Data plane
 
@@ -27,6 +27,8 @@ Volume/mute control and PCM filtering are different layers.
 - A virtual endpoint can provide a fully controlled render path, at the cost of driver deployment and routing complexity.
 
 Consequently, version 1 separates a reliable controller from optional DSP deployment.
+
+The first treatment adapter manages a marked, endpoint-scoped include in an external Equalizer APO configuration. It never bundles the GPL program, installs an APO, or claims per-process treatment. The adapter backs up the existing main configuration and uses a valid `OFF` filter for bypass.
 
 ## Primary references
 

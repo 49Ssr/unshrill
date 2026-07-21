@@ -17,29 +17,32 @@ Exit gate: a clean checkout builds in CI and the rule/DSP smoke tests pass.
 - [x] Display application identity without blocking the UI.
 - [x] Set per-session volume and mute.
 - [x] Refresh session state and recover from ordinary session disappearance.
-- [ ] Replace provisional polling with endpoint and session lifecycle notifications.
+- [x] React to endpoint/default-device and new-session lifecycle notifications, with recovery polling.
 - [ ] Cover non-default render endpoints.
-- Reapply rules after session and device recreation.
+- [x] Reapply application-wide rules after session and default-device recreation.
 
 Exit gate: a saved rule survives application restart, default-device changes, and endpoint reconnects.
 
 ## Phase 2 - Persistent policy
 
-- Store rules atomically in a human-readable schema.
+- [x] Store rules atomically in a human-readable schema.
 - Match packaged and unpackaged applications safely.
-- Resolve conflicts predictably by priority and specificity.
+- [x] Resolve conflicts predictably by priority and specificity.
+- [x] Preserve malformed input as a recovery copy and continue with safe defaults.
 - Add tray controls, bypass, import, and export.
 
 Exit gate: persistence behavior is deterministic and recoverable after a malformed settings file.
 
 ## Phase 3 - Comfort DSP prototype
 
-- Detect a supported external DSP backend.
-- Generate a reversible high-shelf profile with instant bypass.
-- Scope and clearly display which endpoint is affected.
+- [x] Detect a supported external DSP backend without making it mandatory.
+- [x] Generate a reversible high-shelf profile with instant bypass and a main-config backup.
+- [x] Scope and clearly display which endpoint is affected.
 - Measure latency, clipping, and CPU cost.
 
 Exit gate: the filter is audibly and measurably correct, survives device changes, and never strands the user without audio.
+
+Implementation gate: the adapter and its file-safety tests pass. Audible behavior remains unverified until tested on a Windows output with Equalizer APO installed through Configurator.
 
 ## Phase 4 - Measurement and adaptive treatment
 
