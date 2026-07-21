@@ -34,7 +34,7 @@ void Run(string name, Action test)
 
 static void RulePriority()
 {
-	var session = new AudioSessionDescriptor(10, "game.exe", "Game", "speakers");
+	var session = new AudioSessionDescriptor("session-1", 10, "game.exe", "Game", "speakers", 0.5f, false, false);
 	var low = new AudioRule(Guid.Parse("00000000-0000-0000-0000-000000000001"), "Low", "game.exe", Priority: 1);
 	var high = new AudioRule(Guid.Parse("00000000-0000-0000-0000-000000000002"), "High", "game.exe", Priority: 2);
 
@@ -43,7 +43,7 @@ static void RulePriority()
 
 static void RuleSpecificity()
 {
-	var session = new AudioSessionDescriptor(10, "game.exe", "Game", "headphones");
+	var session = new AudioSessionDescriptor("session-1", 10, "game.exe", "Game", "headphones", 0.5f, false, false);
 	var application = new AudioRule(Guid.Parse("00000000-0000-0000-0000-000000000001"), "Application", "game.exe");
 	var specific = new AudioRule(Guid.Parse("00000000-0000-0000-0000-000000000002"), "Specific", "game.exe", "headphones");
 

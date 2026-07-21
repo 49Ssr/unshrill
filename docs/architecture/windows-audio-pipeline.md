@@ -11,6 +11,12 @@ Two implementation details are easy to miss:
 
 These requirements belong inside `Unshrill.WindowsAudio`, not in view models.
 
+## Test-build lifecycle
+
+The first working build deliberately polls a newly acquired default multimedia endpoint every 750 milliseconds. Each pass creates, uses, and disposes its Windows wrappers on a background thread. Session volume and mute writes are serialized with enumeration so wrapper lifetimes do not overlap unpredictably.
+
+This is provisional. Microsoft warns that an enumerator alone can miss sessions reported through `IAudioSessionNotification`. A production session registry must keep a long-lived manager on an MTA thread, call `GetCount` during initialization, subscribe to session creation, and refresh on endpoint changes. Polling gives us a stable user-facing test surface while that lifecycle is implemented; it is not being presented as the final session model.
+
 ## Data plane
 
 Volume/mute control and PCM filtering are different layers.

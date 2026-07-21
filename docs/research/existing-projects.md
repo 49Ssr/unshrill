@@ -2,6 +2,10 @@
 
 These projects answer different parts of the problem. None is currently embedded in Unshrill.
 
+## NAudio.Wasapi
+
+[NAudio.Wasapi](https://www.nuget.org/packages/NAudio.Wasapi/) provides the managed Core Audio interop used by the working session-control prototype. Version 2.3.0 is pinned as a NuGet dependency under the MIT license. Its types are confined to `Unshrill.WindowsAudio`; the source repository is not vendored or added as a submodule.
+
 ## Equalizer APO
 
 [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) is a mature, low-latency system-effect equalizer for Windows. It is the leading first DSP backend because it can validate endpoint-wide comfort profiles without a custom driver. Its processing is endpoint-oriented, so it does not by itself provide clean per-process filtering. Exclusive-mode and ASIO paths can bypass the normal Windows system-effect graph.

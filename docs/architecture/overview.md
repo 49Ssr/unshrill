@@ -12,7 +12,7 @@ Platform-independent policy: application identity, rule matching, conflict resol
 
 ### Unshrill.WindowsAudio
 
-The boundary around Windows Core Audio. It will own COM initialization, endpoint/session enumeration, callback lifetime, and volume/mute application. Callbacks are converted to small immutable snapshots before crossing into the rest of the app.
+The boundary around Windows Core Audio. It owns endpoint/session enumeration, wrapper lifetime, error recovery, and volume/mute application. It uses the narrow `NAudio.Wasapi` package instead of duplicating fragile COM layouts. Audio state is converted to small immutable snapshots before crossing into the rest of the app.
 
 ### Unshrill.Dsp
 

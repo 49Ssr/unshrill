@@ -13,10 +13,12 @@ Exit gate: a clean checkout builds in CI and the rule/DSP smoke tests pass.
 
 ## Phase 1 - Reliable session control
 
-- Enumerate active render endpoints and sessions.
-- Receive session-created, state, volume, and disconnection events.
-- Display application identity without blocking the UI.
-- Set per-session volume and mute.
+- [x] Enumerate the default render endpoint and its shared-mode sessions.
+- [x] Display application identity without blocking the UI.
+- [x] Set per-session volume and mute.
+- [x] Refresh session state and recover from ordinary session disappearance.
+- [ ] Replace provisional polling with endpoint and session lifecycle notifications.
+- [ ] Cover non-default render endpoints.
 - Reapply rules after session and device recreation.
 
 Exit gate: a saved rule survives application restart, default-device changes, and endpoint reconnects.
