@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 using Unshrill.Core;
@@ -7,11 +8,13 @@ namespace Unshrill.WindowsAudio;
 
 public sealed class WindowsAudioSessionService : IAudioSessionService
 {
-	private static readonly TimeSpan RefreshInterval = TimeSpan.FromMilliseconds(750);
+	private static readonly TimeSpan RecoveryRefreshInterval = TimeSpan.FromSeconds(5);
 	private readonly SemaphoreSlim _operationGate = new(1, 1);
+	private readonly SemaphoreSlim _refreshSignal = new(0, 1);
 	private readonly object _lifecycleGate = new();
-	private CancellationTokenSource? _pollCancellation;
-	private Task? _pollTask;
+	private CancellationTokenSource? _monitorCancellation;
+	private Task? _monitorTask;
+	private int _endpointRebuildRequested = 1;
 	private bool _disposed;
 
 	public event EventHandler<AudioSessionsChangedEventArgs>? SessionsChanged;
@@ -27,7 +30,10 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 	public async Task RefreshAsync(CancellationToken cancellationToken = default)
 	{
 		var snapshot = await CaptureAsync(cancellationToken).ConfigureAwait(false);
-		SessionsChanged?.Invoke(this, new AudioSessionsChangedEventArgs(snapshot.EndpointName, snapshot.Sessions));
+		SessionsChanged?.Invoke(this, new AudioSessionsChangedEventArgs(
+			snapshot.EndpointName,
+			snapshot.EndpointId,
+			snapshot.Sessions));
 	}
 
 	public async Task SetMuteAsync(
@@ -60,11 +66,11 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 
 		lock (_lifecycleGate)
 		{
-			if (_pollTask is not null)
+			if (_monitorTask is not null)
 				return Task.CompletedTask;
 
-			_pollCancellation = new CancellationTokenSource();
-			_pollTask = PollAsync(_pollCancellation.Token);
+			_monitorCancellation = new CancellationTokenSource();
+			_monitorTask = Task.Run(() => MonitorAsync(_monitorCancellation.Token), _monitorCancellation.Token);
 		}
 
 		return Task.CompletedTask;
@@ -72,32 +78,32 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 
 	public async Task StopAsync(CancellationToken cancellationToken = default)
 	{
-		Task? pollTask;
-		CancellationTokenSource? pollCancellation;
+		Task? monitorTask;
+		CancellationTokenSource? monitorCancellation;
 
 		lock (_lifecycleGate)
 		{
-			pollTask = _pollTask;
-			pollCancellation = _pollCancellation;
-			_pollTask = null;
-			_pollCancellation = null;
+			monitorTask = _monitorTask;
+			monitorCancellation = _monitorCancellation;
+			_monitorTask = null;
+			_monitorCancellation = null;
 		}
 
-		if (pollTask is null || pollCancellation is null)
+		if (monitorTask is null || monitorCancellation is null)
 			return;
 
-		await pollCancellation.CancelAsync().ConfigureAwait(false);
+		await monitorCancellation.CancelAsync().ConfigureAwait(false);
 
 		try
 		{
-			await pollTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+			await monitorTask.WaitAsync(cancellationToken).ConfigureAwait(false);
 		}
-		catch (OperationCanceledException) when (pollCancellation.IsCancellationRequested)
+		catch (OperationCanceledException) when (monitorCancellation.IsCancellationRequested)
 		{
 		}
 		finally
 		{
-			pollCancellation.Dispose();
+			monitorCancellation.Dispose();
 		}
 	}
 
@@ -109,27 +115,106 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 		_disposed = true;
 		await StopAsync().ConfigureAwait(false);
 		_operationGate.Dispose();
+		_refreshSignal.Dispose();
 		GC.SuppressFinalize(this);
 	}
 
-	private async Task PollAsync(CancellationToken cancellationToken)
+	private async Task MonitorAsync(CancellationToken cancellationToken)
 	{
-		while (!cancellationToken.IsCancellationRequested)
+		using var enumerator = new MMDeviceEnumerator();
+		var notificationClient = new EndpointNotificationClient(this);
+		enumerator.RegisterEndpointNotificationCallback(notificationClient);
+		MMDevice? watchedEndpoint = null;
+		AudioSessionManager? watchedManager = null;
+
+		void SessionCreated(object sender, IAudioSessionControl session)
 		{
-			try
+			SignalRefresh(false);
+		}
+
+		void RebuildSessionWatch()
+		{
+			if (watchedManager is not null)
 			{
-				await RefreshAsync(cancellationToken).ConfigureAwait(false);
-			}
-			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-			{
-				break;
-			}
-			catch (Exception exception)
-			{
-				Faulted?.Invoke(this, new AudioSessionServiceFaultedEventArgs(exception));
+				watchedManager.OnSessionCreated -= SessionCreated;
+				watchedManager.Dispose();
+				watchedManager = null;
 			}
 
-			await Task.Delay(RefreshInterval, cancellationToken).ConfigureAwait(false);
+			watchedEndpoint?.Dispose();
+			watchedEndpoint = null;
+			if (!enumerator.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
+				return;
+
+			watchedEndpoint = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+			watchedManager = watchedEndpoint.AudioSessionManager;
+			watchedManager.RefreshSessions(); // GetSessionEnumerator/GetCount arms session-created notifications.
+			watchedManager.OnSessionCreated += SessionCreated;
+		}
+
+		try
+		{
+			while (!cancellationToken.IsCancellationRequested)
+			{
+				try
+				{
+					if (Interlocked.Exchange(ref _endpointRebuildRequested, 0) != 0)
+						RebuildSessionWatch();
+
+					await RefreshAsync(cancellationToken).ConfigureAwait(false);
+					await _refreshSignal.WaitAsync(RecoveryRefreshInterval, cancellationToken).ConfigureAwait(false);
+					await Task.Delay(80, cancellationToken).ConfigureAwait(false); // Let a just-created session finish publishing metadata.
+				}
+				catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+				{
+					break;
+				}
+				catch (Exception exception)
+				{
+					Faulted?.Invoke(this, new AudioSessionServiceFaultedEventArgs(exception));
+					await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+					Interlocked.Exchange(ref _endpointRebuildRequested, 1);
+				}
+			}
+		}
+		finally
+		{
+			if (watchedManager is not null)
+			{
+				watchedManager.OnSessionCreated -= SessionCreated;
+				watchedManager.Dispose();
+			}
+
+			watchedEndpoint?.Dispose();
+			try
+			{
+				enumerator.UnregisterEndpointNotificationCallback(notificationClient);
+			}
+			catch (Exception exception) when (exception is COMException or InvalidOperationException)
+			{
+				// The endpoint can vanish during shutdown; registration is already unusable then.
+			}
+		}
+	}
+
+	private void SignalRefresh(bool rebuildEndpoint)
+	{
+		if (_disposed)
+			return;
+		if (rebuildEndpoint)
+			Interlocked.Exchange(ref _endpointRebuildRequested, 1);
+
+		try
+		{
+			_refreshSignal.Release();
+		}
+		catch (SemaphoreFullException)
+		{
+			// Multiple Core Audio callbacks collapse into one refresh.
+		}
+		catch (ObjectDisposedException)
+		{
+			// A final callback can race with shutdown after the service has stopped.
 		}
 	}
 
@@ -159,6 +244,7 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 		try
 		{
 			await Task.Run(() => UpdateSession(sessionId, update), cancellationToken).ConfigureAwait(false);
+			SignalRefresh(false);
 		}
 		finally
 		{
@@ -170,7 +256,7 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 	{
 		using var enumerator = new MMDeviceEnumerator();
 		if (!enumerator.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
-			return new AudioSessionSnapshot("No default output", []);
+			return new AudioSessionSnapshot("No default output", null, []);
 
 		using var endpoint = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
 		var manager = endpoint.AudioSessionManager;
@@ -211,6 +297,7 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 
 			return new AudioSessionSnapshot(
 				endpoint.FriendlyName,
+				endpoint.ID,
 				sessions.OrderBy(session => session.DisplayName, StringComparer.OrdinalIgnoreCase).ToArray());
 		}
 		finally
@@ -289,5 +376,25 @@ public sealed class WindowsAudioSessionService : IAudioSessionService
 
 	private sealed record AudioSessionSnapshot(
 		string EndpointName,
+		string? EndpointId,
 		IReadOnlyList<AudioSessionDescriptor> Sessions);
+
+	[ComVisible(true)]
+	private sealed class EndpointNotificationClient(WindowsAudioSessionService owner) : IMMNotificationClient
+	{
+		public void OnDeviceStateChanged(string deviceId, DeviceState newState) => owner.SignalRefresh(true);
+		public void OnDeviceAdded(string pwstrDeviceId) => owner.SignalRefresh(true);
+		public void OnDeviceRemoved(string deviceId) => owner.SignalRefresh(true);
+
+		public void OnDefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId)
+		{
+			if (flow == DataFlow.Render && role == Role.Multimedia)
+				owner.SignalRefresh(true);
+		}
+
+		public void OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key)
+		{
+			// Friendly-name changes do not affect session identity; the recovery refresh will pick them up.
+		}
+	}
 }

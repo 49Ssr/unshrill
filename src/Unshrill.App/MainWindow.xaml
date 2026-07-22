@@ -2,10 +2,10 @@
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	Title="Unshrill"
-	Width="1040"
-	Height="700"
-	MinWidth="840"
-	MinHeight="560"
+	Width="1180"
+	Height="780"
+	MinWidth="980"
+	MinHeight="650"
 	Background="{StaticResource CanvasBrush}"
 	Foreground="{StaticResource PrimaryBrush}"
 	WindowStartupLocation="CenterScreen">
@@ -30,6 +30,22 @@
 					<Setter Property="Content" Value="Muted" />
 					<Setter Property="Background" Value="#694247" />
 					<Setter Property="BorderBrush" Value="#A86670" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+		<Style x:Key="RememberToggle" TargetType="ToggleButton">
+			<Setter Property="MinWidth" Value="78" />
+			<Setter Property="Height" Value="32" />
+			<Setter Property="Margin" Value="16,0,0,0" />
+			<Setter Property="Padding" Value="10,5" />
+			<Setter Property="Background" Value="#26302B" />
+			<Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+			<Setter Property="BorderBrush" Value="#3B4A42" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Style.Triggers>
+				<Trigger Property="IsChecked" Value="True">
+					<Setter Property="Background" Value="#294737" />
+					<Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
 				</Trigger>
 			</Style.Triggers>
 		</Style>
@@ -70,7 +86,7 @@
 
 		<Grid Grid.Row="2">
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="2*" />
+				<ColumnDefinition Width="1.65*" />
 				<ColumnDefinition Width="20" />
 				<ColumnDefinition Width="*" />
 			</Grid.ColumnDefinitions>
@@ -113,9 +129,10 @@
 									<Border Padding="14" Background="#22292D" CornerRadius="9">
 										<Grid>
 											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="1.15*" />
-												<ColumnDefinition Width="1.35*" />
-												<ColumnDefinition Width="Auto" />
+										<ColumnDefinition Width="1.15*" />
+										<ColumnDefinition Width="1.35*" />
+										<ColumnDefinition Width="Auto" />
+										<ColumnDefinition Width="Auto" />
 											</Grid.ColumnDefinitions>
 											<StackPanel VerticalAlignment="Center">
 												<TextBlock FontSize="15"
@@ -144,8 +161,13 @@
 													Foreground="{StaticResource MutedBrush}"
 													Text="{Binding VolumeText}" />
 											</Grid>
-											<ToggleButton Grid.Column="2"
-												Style="{StaticResource MuteToggle}"
+									<ToggleButton Grid.Column="2"
+										Style="{StaticResource RememberToggle}"
+										Content="{Binding RememberText}"
+										IsChecked="{Binding IsRemembered, Mode=TwoWay}"
+										ToolTip="Save this application's volume and mute state across restarts." />
+									<ToggleButton Grid.Column="3"
+										Style="{StaticResource MuteToggle}"
 												Content="Mute"
 												IsChecked="{Binding IsMuted, Mode=TwoWay}" />
 										</Grid>
@@ -167,14 +189,15 @@
 			</Border>
 
 			<Border Grid.Column="2" Padding="22" Background="{StaticResource PanelBrush}" CornerRadius="14">
+				<ScrollViewer VerticalScrollBarVisibility="Auto">
 				<StackPanel>
 					<TextBlock FontSize="13" Foreground="{StaticResource AccentBrush}" Text="COMFORT LAYER" />
-					<TextBlock Margin="0,9,0,0" FontSize="22" FontWeight="SemiBold" Text="Gentle by design" />
+					<TextBlock Margin="0,9,0,0" FontSize="22" FontWeight="SemiBold" Text="Mercy Mode" />
 					<TextBlock Margin="0,12,0,0"
 						Foreground="{StaticResource MutedBrush}"
 						LineHeight="22"
 						TextWrapping="Wrap"
-						Text="The live mixer is deliberately separate from frequency treatment. Mercy Mode stays disabled until its endpoint-wide scope and bypass are proven." />
+						Text="A broad high shelf softens harsh upper frequencies. This prototype uses an external Equalizer APO installation and affects the named output device, not one application." />
 					<Border Margin="0,24,0,0" Padding="14" BorderBrush="#33413A" BorderThickness="1" CornerRadius="8">
 						<Grid>
 							<Grid.ColumnDefinitions>
@@ -182,18 +205,92 @@
 								<ColumnDefinition Width="Auto" />
 							</Grid.ColumnDefinitions>
 							<StackPanel>
-								<TextBlock Text="Mercy Mode" />
-								<TextBlock Margin="0,4,0,0" Foreground="{StaticResource MutedBrush}" FontSize="12" Text="Not connected" />
+								<TextBlock Text="Endpoint treatment" />
+								<TextBlock Margin="0,4,0,0" Foreground="{StaticResource MutedBrush}" FontSize="12" Text="Instant bypass; off by default" />
 							</StackPanel>
-							<ToggleButton Grid.Column="1" Width="46" Height="24" IsEnabled="False" />
+							<ToggleButton x:Name="MercyToggle"
+								Grid.Column="1"
+								Width="46"
+								Height="24"
+								IsEnabled="False"
+								Click="MercyToggle_Click" />
 						</Grid>
 					</Border>
-					<TextBlock Margin="0,22,0,0"
+
+					<Grid Margin="0,22,0,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="Shelf begins" />
+						<TextBlock x:Name="FrequencyValueText" Grid.Column="1" Foreground="{StaticResource MutedBrush}" Text="5.0 kHz" />
+					</Grid>
+					<Slider x:Name="FrequencySlider"
+						Margin="0,8,0,0"
+						Minimum="2000"
+						Maximum="12000"
+						TickFrequency="250"
+						Value="5000"
+						ValueChanged="ComfortParameter_Changed" />
+
+					<Grid Margin="0,18,0,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="Upper-frequency reduction" />
+						<TextBlock x:Name="GainValueText" Grid.Column="1" Foreground="{StaticResource MutedBrush}" Text="-6.0 dB" />
+					</Grid>
+					<Slider x:Name="GainSlider"
+						Margin="0,8,0,0"
+						Minimum="-12"
+						Maximum="0"
+						TickFrequency="0.5"
+						Value="-6"
+						ValueChanged="ComfortParameter_Changed" />
+
+					<Grid Margin="0,18,0,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="Shelf shape" />
+						<TextBlock x:Name="QValueText" Grid.Column="1" Foreground="{StaticResource MutedBrush}" Text="Q 0.70" />
+					</Grid>
+					<Slider x:Name="QSlider"
+						Margin="0,8,0,0"
+						Minimum="0.2"
+						Maximum="1.4"
+						TickFrequency="0.05"
+						Value="0.7"
+						ValueChanged="ComfortParameter_Changed" />
+
+					<TextBlock x:Name="TreatmentStatusText"
+						Margin="0,22,0,0"
 						Foreground="{StaticResource MutedBrush}"
 						LineHeight="20"
 						TextWrapping="Wrap"
-						Text="This test build controls shared-mode sessions on the current default multimedia output. Exclusive-mode audio will not appear." />
+						Text="Checking for Equalizer APO..." />
+					<StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+						<Button x:Name="ApplyComfortButton"
+							Style="{StaticResource QuietButton}"
+							IsEnabled="False"
+							Click="ApplyComfort_Click"
+							Content="Apply settings" />
+						<Button x:Name="BackendButton"
+							Margin="10,0,0,0"
+							Style="{StaticResource QuietButton}"
+							Click="Backend_Click"
+							Content="Get Equalizer APO" />
+					</StackPanel>
+					<TextBlock Margin="0,18,0,0"
+						Foreground="{StaticResource MutedBrush}"
+						FontSize="11"
+						LineHeight="17"
+						TextWrapping="Wrap"
+						Text="Unshrill backs up Equalizer APO's main configuration before adding a clearly marked include. Disabling Mercy Mode writes an OFF filter and keeps the audio path intact." />
 				</StackPanel>
+				</ScrollViewer>
 			</Border>
 		</Grid>
 
