@@ -8,6 +8,7 @@ This directory is the durable memory of Unshrill. Research notes link to primary
 - [Architecture overview](architecture/overview.md)
 - [Windows audio pipeline](architecture/windows-audio-pipeline.md)
 - [Comfort filter](dsp/comfort-filter.md)
+- [Selective harshness treatment](research/selective-harshness-treatment.md)
 - [Existing projects](research/existing-projects.md)
 - [NFS:HPR case study](research/nfshpr-case-study.md)
 - [Dependency policy](dependencies.md)

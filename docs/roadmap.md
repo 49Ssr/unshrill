@@ -44,12 +44,15 @@ Exit gate: the filter is audibly and measurably correct, survives device changes
 
 Implementation gate: the adapter and its file-safety tests pass. Audible behavior remains unverified until tested on a Windows output with Equalizer APO installed through Configurator.
 
+Research result: a fixed high-frequency roll-off failed the transparency goal by audibly reducing wanted music treble. Keep the existing adapter as a reversible experiment, not the final treatment model.
+
 ## Phase 4 - Measurement and adaptive treatment
 
 - Add opt-in process-loopback capture for analysis.
 - Build spectrogram and short-event measurement tools.
 - Test transient-aware or dynamic high-frequency reduction.
 - Keep capture and treatment as separate capabilities.
+- Establish a hard-negative corpus and a false-trigger-per-hour budget before live treatment.
 
 Exit gate: detection performance is measured against a labeled corpus, including false positives.
 

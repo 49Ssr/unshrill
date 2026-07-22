@@ -13,6 +13,8 @@ That is deliberate. A submodule is appropriate when Unshrill builds, tests, or s
 | EarTrumpet | Reference for Windows session and route behavior | Research reference only |
 | Microsoft Windows classic samples | Reference for process-loopback capture | Research reference only |
 | Microsoft SysVAD | Reference if a virtual endpoint becomes justified | Research reference only |
+| SciPy and librosa | Offline spectrogram and feature experiments | Research candidates only; not application dependencies |
+| MoSQITo | Standards-oriented psychoacoustic comparison | Apache-2.0 research candidate; calibration and applicability review required |
 
 ## Admission rules
 
