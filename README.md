@@ -19,6 +19,7 @@ The GUI currently:
 - remembers an application's volume and mute state across restarts;
 - preserves malformed settings and starts safely with defaults;
 - detects Equalizer APO and can generate a reversible, endpoint-scoped high shelf;
+- analyzes short WAV recordings for bright, tonal, transient, and sudden-emergence candidate events without modifying the file;
 - leaves ordinary Windows audio untouched when Unshrill is closed.
 
 Applications using exclusive-mode or non-default outputs will not appear in this build. Multiple sessions from one application are shown separately because Windows exposes them separately.
@@ -26,6 +27,8 @@ Applications using exclusive-mode or non-default outputs will not appear in this
 Saved rules live in `%LocalAppData%\Unshrill\settings.json`. The current Remember button creates an application-wide rule, so it survives a default-device change. Device-specific rule fields exist in the schema but are not exposed in the GUI yet.
 
 Mercy Mode starts at a 5 kHz, -6 dB high shelf. It does not intercept or rewrite an application's stream: it manages a small `unshrill.txt` include for an existing [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) installation. The app scopes that include to the currently displayed endpoint, backs up `config.txt` before first integration, and bypasses by writing a valid `OFF` filter. Equalizer APO must first be installed and assigned to the output with its Configurator.
+
+The **Analyze WAV...** workbench is measurement-only. It reports possible events using signal features and calls them candidates rather than deciding what the listener should find annoying. Its first heuristic thresholds are research seeds and need real positive and hard-negative recordings before any live treatment is justified.
 
 ## What it is building toward
 

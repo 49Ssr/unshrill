@@ -3,7 +3,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Win32;
 using Unshrill.Core;
+using Unshrill.Dsp;
 using Unshrill.WindowsAudio;
 
 namespace Unshrill.App;
@@ -81,6 +83,41 @@ public partial class MainWindow : Window, IAsyncDisposable
 		finally
 		{
 			RefreshButton.IsEnabled = true;
+		}
+	}
+
+	private async void AnalyzeWav_Click(object sender, RoutedEventArgs e)
+	{
+		var dialog = new OpenFileDialog
+		{
+			Title = "Choose a lossless WAV recording to analyze",
+			Filter = "Wave audio (*.wav)|*.wav",
+			CheckFileExists = true,
+			Multiselect = false
+		};
+		if (dialog.ShowDialog(this) != true)
+			return;
+
+		AnalyzeWavButton.IsEnabled = false;
+		SetStatus("Reading and analyzing the WAV without changing it...");
+		try
+		{
+			var result = await Task.Run(() =>
+			{
+				var input = WaveFileLoader.Load(dialog.FileName);
+				return HarshnessAnalyzer.Analyze(input.InterleavedSamples, input.SampleRate, input.ChannelCount);
+			});
+			var window = new AnalysisWindow(dialog.FileName, result) { Owner = this };
+			window.ShowDialog();
+			SetStatus($"Analysis complete: {result.Events.Count} candidate event{(result.Events.Count == 1 ? string.Empty : "s")} found.");
+		}
+		catch (Exception exception)
+		{
+			SetStatus($"Could not analyze that WAV: {exception.Message}", true);
+		}
+		finally
+		{
+			AnalyzeWavButton.IsEnabled = true;
 		}
 	}
 
