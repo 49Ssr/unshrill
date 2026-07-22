@@ -49,7 +49,9 @@ Research result: a fixed high-frequency roll-off failed the transparency goal by
 ## Phase 4 - Measurement and adaptive treatment
 
 - Add opt-in process-loopback capture for analysis.
-- Build spectrogram and short-event measurement tools.
+- [x] Add a bounded offline WAV loader and short-event candidate analyzer.
+- Add waveform and spectrogram visualization.
+- Add user labels and corpus export.
 - Test transient-aware or dynamic high-frequency reduction.
 - Keep capture and treatment as separate capabilities.
 - Establish a hard-negative corpus and a false-trigger-per-hour budget before live treatment.

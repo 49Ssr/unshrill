@@ -76,6 +76,11 @@
 					Style="{StaticResource QuietButton}"
 					Click="Refresh_Click"
 					Content="Refresh now" />
+				<Button x:Name="AnalyzeWavButton"
+					Margin="0,8,0,0"
+					Style="{StaticResource QuietButton}"
+					Click="AnalyzeWav_Click"
+					Content="Analyze WAV..." />
 				<TextBlock x:Name="SessionCountText"
 					Margin="0,8,0,0"
 					HorizontalAlignment="Right"

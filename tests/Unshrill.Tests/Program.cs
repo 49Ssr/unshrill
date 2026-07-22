@@ -1,3 +1,4 @@
+using NAudio.Wave;
 using Unshrill.Core;
 using Unshrill.Dsp;
 using Unshrill.WindowsAudio;
@@ -8,6 +9,11 @@ Run("rule priority", RulePriority);
 Run("rule specificity", RuleSpecificity);
 Run("rule validation", RuleValidation);
 Run("high-shelf response", HighShelfResponse);
+Run("bright transient candidate", BrightTransientCandidate);
+Run("sudden impact candidate", SuddenImpactCandidate);
+Run("steady low tone stays clear", SteadyLowToneStaysClear);
+Run("inaudible digital tone stays clear", InaudibleDigitalToneStaysClear);
+Run("WAV loading", WaveLoading);
 Run("settings round trip", SettingsRoundTrip);
 Run("invalid settings recovery", InvalidSettingsRecovery);
 Run("Equalizer APO managed configuration", EqualizerApoManagedConfiguration);
@@ -68,6 +74,98 @@ static void HighShelfResponse()
 
 	AssertNear(0, lowDb, 0.1);
 	AssertNear(-6, highDb, 0.25);
+}
+
+static void BrightTransientCandidate()
+{
+	const int sampleRate = 48_000;
+	var samples = new float[sampleRate * 2];
+	for (var index = 0; index < samples.Length; index++)
+	{
+		var time = index / (double)sampleRate;
+		var value = 0.025 * Math.Sin(2 * Math.PI * 220 * time);
+		if (time is >= 0.75 and < 0.9)
+		{
+			var local = time - 0.75;
+			var envelope = Math.Min(1, local / 0.004) * Math.Min(1, (0.9 - time) / 0.015);
+			value += 0.65 * envelope * Math.Sin(2 * Math.PI * 7_000 * time);
+		}
+		samples[index] = (float)value;
+	}
+
+	var result = HarshnessAnalyzer.Analyze(samples, sampleRate, 1);
+	var candidate = result.Events.FirstOrDefault(item => item.StartSeconds < 0.9 && item.EndSeconds > 0.75) ??
+		throw new InvalidOperationException("The synthetic 7 kHz burst should produce a candidate event.");
+
+	AssertTrue(candidate.Reasons.HasFlag(AudioCandidateReason.Bright), "The burst should be identified as bright.");
+	AssertTrue(candidate.Reasons.HasFlag(AudioCandidateReason.Tonal), "The burst should be identified as tonal.");
+	AssertTrue(candidate.CandidateScore > 0.6, "The isolated burst should produce a strong candidate score.");
+	AssertTrue(candidate.FocusBandRatio > 0.3, $"The burst should place substantial energy in the focus band; got {candidate.FocusBandRatio:P1}.");
+	AssertNear(7_000, candidate.DominantFrequencyHz, 30);
+}
+
+static void SteadyLowToneStaysClear()
+{
+	const int sampleRate = 48_000;
+	var samples = new float[sampleRate * 2];
+	for (var index = 0; index < samples.Length; index++)
+		samples[index] = (float)(0.2 * Math.Sin(2 * Math.PI * 220 * index / sampleRate));
+
+	var result = HarshnessAnalyzer.Analyze(samples, sampleRate, 1);
+	AssertEqual(0, result.Events.Count);
+}
+
+static void SuddenImpactCandidate()
+{
+	const int sampleRate = 48_000;
+	var samples = new float[sampleRate * 2];
+	for (var index = 0; index < samples.Length; index++)
+		samples[index] = (float)(0.01 * Math.Sin(2 * Math.PI * 220 * index / sampleRate));
+	for (var index = 0; index < 96; index++)
+		samples[sampleRate + index] += (float)(0.9 * Math.Exp(-index / 18d) * (index % 2 == 0 ? 1 : -1));
+
+	var result = HarshnessAnalyzer.Analyze(samples, sampleRate, 1);
+	var candidate = result.Events.FirstOrDefault(item => item.StartSeconds < 1.05 && item.EndSeconds > 1) ??
+		throw new InvalidOperationException("The synthetic impact should produce a candidate event.");
+	AssertTrue(candidate.Reasons.HasFlag(AudioCandidateReason.Transient), "The impact should be identified as transient.");
+	AssertTrue(candidate.Reasons.HasFlag(AudioCandidateReason.SuddenEmergence), "The impact should rise above its background.");
+}
+
+static void InaudibleDigitalToneStaysClear()
+{
+	const int sampleRate = 48_000;
+	var samples = new float[sampleRate];
+	for (var index = 0; index < samples.Length; index++)
+		samples[index] = (float)(0.0001 * Math.Sin(2 * Math.PI * 7_000 * index / sampleRate));
+
+	var result = HarshnessAnalyzer.Analyze(samples, sampleRate, 1);
+	AssertEqual(0, result.Events.Count);
+}
+
+static void WaveLoading()
+{
+	WithTemporaryDirectory(directory =>
+	{
+		const int sampleRate = 48_000;
+		var path = Path.Combine(directory, "input.wav");
+		var written = new float[sampleRate / 10 * 2];
+		for (var index = 0; index < written.Length; index += 2)
+		{
+			var value = (float)(0.25 * Math.Sin(2 * Math.PI * 440 * index / 2 / sampleRate));
+			written[index] = value;
+			written[index + 1] = value;
+		}
+
+		using (var writer = new WaveFileWriter(path, new WaveFormat(sampleRate, 16, 2)))
+			writer.WriteSamples(written, 0, written.Length);
+
+		var loaded = WaveFileLoader.Load(path);
+		AssertEqual(sampleRate, loaded.SampleRate);
+		AssertEqual(2, loaded.ChannelCount);
+		AssertEqual(written.Length, loaded.InterleavedSamples.Length);
+		AssertNear(0.1, loaded.DurationSeconds, 0.001);
+		AssertNear(written[2_000], loaded.InterleavedSamples[2_000], 0.0001);
+	});
 }
 
 static void SettingsRoundTrip()
